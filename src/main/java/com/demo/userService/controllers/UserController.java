@@ -27,10 +27,10 @@ public class UserController {
         return UserDto.from(user);
     }
     @PostMapping("/login")
-    public TokenDto login(@RequestBody LoginRequestDto loginRequestDto) throws UserNotFoundException, PasswordMismatchException {
-        Token token = userService.login(loginRequestDto.getEmail(), loginRequestDto.getPassword());
-        TokenDto tokenDto = TokenDto.from(token);
-        return tokenDto;
+    public String login(@RequestBody LoginRequestDto loginRequestDto) throws UserNotFoundException, PasswordMismatchException {
+        String token = userService.login(loginRequestDto.getEmail(), loginRequestDto.getPassword());
+       // TokenDto tokenDto = TokenDto.from(token);
+        return token;
     }
     @GetMapping("/validateToken/{tokenValue}")
     public UserDto validateToken(@PathVariable("tokenValue") String tokenValue) throws InvalidTokenException {

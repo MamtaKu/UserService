@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface UserService {
     User signUp(String name, String email, String password);
-    Token login(String email, String password) throws UserNotFoundException, PasswordMismatchException;
+    String login(String email, String password) throws UserNotFoundException, PasswordMismatchException;
     User validateToken(String tokenValue) throws InvalidTokenException;
     String logout(String tokenValue);
 }
