@@ -1,5 +1,6 @@
 package com.demo.userService.services;
 
+import com.demo.userService.dtos.SendEmailDto;
 import com.demo.userService.exceptions.InvalidTokenException;
 import com.demo.userService.exceptions.PasswordMismatchException;
 import com.demo.userService.exceptions.UserNotFoundException;
@@ -7,11 +8,14 @@ import com.demo.userService.models.Token;
 import com.demo.userService.models.User;
 import com.demo.userService.repositories.TokenRepository;
 import com.demo.userService.repositories.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,15 +34,21 @@ public class UserServiceImpl implements UserService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
     private TokenRepository tokenRepository;
     private SecretKey secretKey;
+    private KafkaTemplate<String, String> kafkaTemplate;
+    private ObjectMapper objectMapper;
 
     public UserServiceImpl(UserRepository userRepository,
                            BCryptPasswordEncoder bCryptPasswordEncoder,
                            TokenRepository tokenRepository,
-                           SecretKey secretKey) {
+                           SecretKey secretKey,
+                           KafkaTemplate<String, String> kafkaTemplate,
+                           ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.tokenRepository = tokenRepository;
         this.secretKey = secretKey;
+        this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -52,7 +62,19 @@ public class UserServiceImpl implements UserService {
         user.setUsername(name);
         user.setEmail(email);
         user.setPassword(bCryptPasswordEncoder.encode(password));
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        //Push a message to kafka topic to send welcome email
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmail(email);
+        sendEmailDto.setSubject("Welcome to Demo App");
+        sendEmailDto.setBody(("Hi "+name+",\n\nThank you for registering with Demo App.\n\nRegards,\nDemo App Team"));
+
+        try {
+            kafkaTemplate.send("sendWelcomeEmail", objectMapper.writeValueAsString(sendEmailDto));
+        } catch( JsonProcessingException e){
+            throw new RuntimeException("Error in serializing SendEmailDto");
+        }
         return user;
     }
 

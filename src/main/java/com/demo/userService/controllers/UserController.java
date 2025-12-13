@@ -21,6 +21,13 @@ public class UserController {
         this.userService = userService;
     }
 
+    // Test endpoint to verify service is running
+    @GetMapping("/hello")
+    public void hello(){
+        System.out.println("Received a call from Product Service");
+    }
+
+
     @PostMapping("/signup")
     public UserDto signUp(@RequestBody SignUpRequestDto signUpRequestDto){
         User user = userService.signUp(signUpRequestDto.getName(), signUpRequestDto.getEmail(), signUpRequestDto.getPassword());
